@@ -152,7 +152,7 @@ namespace UnityEngine.Rendering.Universal
             // RenderPass Event + Source Settings (Depth / Depth&Normals
             if (renderer is UniversalRenderer { usesDeferredLighting: true })
             {
-                renderPassEvent = m_CurrentSettings.AfterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.AfterRenderingGbuffer;
+                renderPassEvent = m_CurrentSettings.AfterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.BeforeRenderingDeferredLights;
 
                 if (renderPassEvent == RenderPassEvent.AfterRenderingGbuffer)
                     breakGBufferAndDeferredRenderPass = true;
