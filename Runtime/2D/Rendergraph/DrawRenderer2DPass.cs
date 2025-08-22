@@ -115,7 +115,6 @@ namespace UnityEngine.Rendering.Universal
 
                     SetGlobalLightTextures(graph, builder, passData.lightTextures, ref layerBatch, rendererData, isLitView);
 
-                    builder.AllowPassCulling(false);
                     builder.AllowGlobalStateModification(true);
 
                     builder.SetRenderFunc((SetGlobalPassData data, RasterGraphContext context) =>

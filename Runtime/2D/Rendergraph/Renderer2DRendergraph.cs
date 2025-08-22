@@ -322,7 +322,10 @@ namespace UnityEngine.Rendering.Universal
                         depthDescriptor.bindMS = false;
 
                     if (m_CopyDepthPass != null)
+                    {
+                        m_CopyDepthPass.MsaaSamples = depthDescriptor.msaaSamples;
                         m_CopyDepthPass.m_CopyResolvedDepth = !depthDescriptor.bindMS;
+                    }
 
                     depthDescriptor.graphicsFormat = GraphicsFormat.None;
                     depthDescriptor.depthStencilFormat = CoreUtils.GetDefaultDepthStencilFormat();

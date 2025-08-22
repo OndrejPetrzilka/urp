@@ -829,27 +829,10 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
             if (m_ActiveSubTarget.value == null)
                 return false;
 
-            if (m_ActiveSubTarget.value is UniversalUnlitSubTarget)
-                return true;
+            if (m_ActiveSubTarget.value is UniversalDecalSubTarget)
+                return false;
 
-            if (m_ActiveSubTarget.value is UniversalSixWaySubTarget)
-                return true;
-
-            if (m_ActiveSubTarget.value is UniversalLitSubTarget)
-                return true;
-
-            if (m_ActiveSubTarget.value is UniversalSpriteLitSubTarget)
-                return true;
-
-            if (m_ActiveSubTarget.value is UniversalSpriteUnlitSubTarget)
-                return true;
-
-            if (m_ActiveSubTarget.value is UniversalSpriteCustomLitSubTarget)
-                return true;
-
-            //It excludes:
-            // - UniversalDecalSubTarget
-            return false;
+            return true;
         }
 
         public bool SupportsVFX() => CanSupportVFX() && m_SupportVFX;
@@ -2270,6 +2253,16 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
             definition = KeywordDefinition.MultiCompile,
             scope = KeywordScope.Global,
             stages = KeywordShaderStage.Fragment,
+        };
+
+        public static readonly KeywordDescriptor UseSkinnedSprite = new KeywordDescriptor()
+        {
+            displayName = "GPU Sprite Skinning",
+            referenceName = "SKINNED_SPRITE",
+            type = KeywordType.Boolean,
+            definition = KeywordDefinition.MultiCompile,
+            scope = KeywordScope.Global,
+            stages = KeywordShaderStage.Vertex,
         };
 
         public static readonly KeywordDescriptor SceneSelectionPass = new KeywordDescriptor()

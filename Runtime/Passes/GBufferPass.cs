@@ -233,7 +233,6 @@ namespace UnityEngine.Rendering.Universal.Internal
             bool useCameraRenderingLayersTexture = m_DeferredLights.UseRenderingLayers && !m_DeferredLights.UseLightLayers;
 
             passData.gbuffer = m_DeferredLights.GbufferTextureHandles;
-
             for (int i = 0; i < m_DeferredLights.GBufferSliceCount; i++)
             {
                 Debug.Assert(passData.gbuffer[i].IsValid());
@@ -258,7 +257,6 @@ namespace UnityEngine.Rendering.Universal.Internal
                     builder.SetGlobalTextureAfterPass(resourceData.renderingLayersTexture, s_CameraRenderingLayersTextureID);
             }
 
-            builder.AllowPassCulling(false);
             builder.AllowGlobalStateModification(true);
 
             builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
