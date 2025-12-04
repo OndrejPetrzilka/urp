@@ -15,7 +15,7 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Computes and submits lighting data to the GPU.
     /// </summary>
-    public class ForwardLights
+    public partial class ForwardLights
     {
         static class LightConstantBuffer
         {
@@ -223,6 +223,13 @@ namespace UnityEngine.Rendering.Universal.Internal
             var localLights = lights.GetSubArray(firstLocalLightIdx, localLightCount);
 
             var reflectionProbeCount = math.min(probes.Length, UniversalRenderPipeline.maxVisibleReflectionProbes);
+            // Ensure reflection probes without textures aren't used.
+            for (var i = 0; i < probes.Length; i++)
+            {
+                if (!probes[i].texture)
+                    reflectionProbeCount--;
+            }
+
             var itemsPerTile = localLights.Length + reflectionProbeCount;
             wordsPerTile = (itemsPerTile + 31) / 32;
 
@@ -255,11 +262,12 @@ namespace UnityEngine.Rendering.Universal.Internal
             // Should probe come after otherProbe?
             static bool IsProbeGreater(VisibleReflectionProbe probe, VisibleReflectionProbe otherProbe)
             {
-                return probe.importance < otherProbe.importance ||
-                    (probe.importance == otherProbe.importance && probe.bounds.extents.sqrMagnitude > otherProbe.bounds.extents.sqrMagnitude);
+                return otherProbe.texture != null && (probe.texture == null || probe.importance < otherProbe.importance ||
+                    (probe.importance == otherProbe.importance && probe.bounds.extents.sqrMagnitude > otherProbe.bounds.extents.sqrMagnitude));
             }
 
-            for (var i = 1; i < reflectionProbeCount; i++)
+            // Used probes.Length to check that we use the most relevant probes.
+            for (var i = 1; i < probes.Length; i++)
             {
                 var probe = probes[i];
                 var j = i - 1;
@@ -283,10 +291,13 @@ namespace UnityEngine.Rendering.Universal.Internal
             // Innerloop batch count of 32 is not special, just a handwavy amount to not have too much scheduling overhead nor too little parallelism.
             var lightMinMaxZHandle = lightMinMaxZJob.ScheduleParallel(localLightCount * viewCount, 32, new JobHandle());
 
+            var reflectionProbeRotation = GraphicsSettings.TryGetRenderPipelineSettings<URPReflectionProbeSettings>(out var reflectionProbeSettings) ? reflectionProbeSettings.UseReflectionProbeRotation : true;
+
             var reflectionProbeMinMaxZJob = new ReflectionProbeMinMaxZJob
             {
                 worldToViews = worldToViews,
                 reflectionProbes = probes,
+                reflectionProbeRotation = reflectionProbeRotation,
                 minMaxZs = minMaxZs.GetSubArray(localLightCount * viewCount, reflectionProbeCount * viewCount)
             };
             var reflectionProbeMinMaxZHandle = reflectionProbeMinMaxZJob.ScheduleParallel(reflectionProbeCount * viewCount, 32, lightMinMaxZHandle);
@@ -321,6 +332,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 lights = localLights,
                 reflectionProbes = probes,
+                reflectionProbeRotation = reflectionProbeRotation,
                 tileRanges = tileRanges,
                 itemsPerTile = itemsPerTile,
                 rangesPerItem = rangesPerItem,
@@ -417,6 +429,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
         }
 
+#if URP_COMPATIBILITY_MODE
         /// <summary>
         /// Sets up the keywords and data for forward lighting.
         /// </summary>
@@ -431,6 +444,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             SetupLights(CommandBufferHelpers.GetUnsafeCommandBuffer(renderingData.commandBuffer), universalRenderingData, cameraData, lightData);
         }
+#endif
 
         static ProfilingSampler s_SetupForwardLights = new ProfilingSampler("Setup Forward Lights");
         private class SetupLightPassData
@@ -507,10 +521,9 @@ namespace UnityEngine.Rendering.Universal.Internal
                 cmd.SetKeyword(ShaderGlobalKeywords.LightmapShadowMixing, isSubtractive || isShadowMaskAlways);
                 cmd.SetKeyword(ShaderGlobalKeywords.ShadowsShadowMask, isShadowMask);
                 cmd.SetKeyword(ShaderGlobalKeywords.MixedLightingSubtractive, isSubtractive); // Backward compatibility
-
                 cmd.SetKeyword(ShaderGlobalKeywords.ReflectionProbeBlending, lightData.reflectionProbeBlending);
                 cmd.SetKeyword(ShaderGlobalKeywords.ReflectionProbeBoxProjection, lightData.reflectionProbeBoxProjection);
-                cmd.SetKeyword(ShaderGlobalKeywords.ReflectionProbeAtlas, lightData.reflectionProbeAtlas);
+                cmd.SetKeyword(ShaderGlobalKeywords.ReflectionProbeAtlas, lightData.reflectionProbeAtlas && m_UseForwardPlus && lightData.reflectionProbeBlending); // Needs to match shader stripping
 
                 var asset = UniversalRenderPipeline.asset;
 
@@ -552,6 +565,11 @@ namespace UnityEngine.Rendering.Universal.Internal
                     cmd.SetKeyword(ShaderGlobalKeywords.LIGHTMAP_BICUBIC_SAMPLING, lightmapSamplingSettings.useBicubicLightmapSampling);
                 else
                     cmd.SetKeyword(ShaderGlobalKeywords.LIGHTMAP_BICUBIC_SAMPLING, false);
+
+                if (GraphicsSettings.TryGetRenderPipelineSettings<URPReflectionProbeSettings>(out var reflectionProbeSettings))
+                    cmd.SetKeyword(ShaderGlobalKeywords.ReflectionProbeRotation, reflectionProbeSettings.UseReflectionProbeRotation);
+                else
+                    cmd.SetKeyword(ShaderGlobalKeywords.ReflectionProbeRotation, false);
             }
         }
 

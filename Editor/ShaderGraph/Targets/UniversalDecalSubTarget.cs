@@ -57,7 +57,6 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
         [SerializeField]
         DecalData m_DecalData;
 
-        [SerializeField]
         private DecalData decalData
         {
             get
@@ -990,6 +989,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { CoreKeywordDescriptors.DirectionalLightmapCombined },
                 { CoreKeywordDescriptors.UseLegacyLightmaps },
                 { CoreKeywordDescriptors.LightmapBicubicSampling },
+                { CoreKeywordDescriptors.ReflectionProbeRotation },
                 { CoreKeywordDescriptors.MainLightShadows },
                 { CoreKeywordDescriptors.AdditionalLights },
                 { CoreKeywordDescriptors.AdditionalLightShadows },
@@ -1012,6 +1012,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
             public static readonly KeywordCollection ScreenSpaceProjector = new KeywordCollection
             {
                 { CoreKeywordDescriptors.MainLightShadows },
+                { CoreKeywordDescriptors.ScreenSpaceIrradiance },
                 { CoreKeywordDescriptors.AdditionalLights },
                 { CoreKeywordDescriptors.AdditionalLightShadows },
                 { CoreKeywordDescriptors.ShadowsSoft },
@@ -1029,6 +1030,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { CoreKeywordDescriptors.DirectionalLightmapCombined },
                 { CoreKeywordDescriptors.UseLegacyLightmaps },
                 { CoreKeywordDescriptors.LightmapBicubicSampling },
+                { CoreKeywordDescriptors.ReflectionProbeRotation },
                 { CoreKeywordDescriptors.MainLightShadows },
                 { CoreKeywordDescriptors.ShadowsSoft },
                 { CoreKeywordDescriptors.LightmapShadowMixing },
