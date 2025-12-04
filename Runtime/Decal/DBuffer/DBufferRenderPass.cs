@@ -16,28 +16,28 @@ namespace UnityEngine.Rendering.Universal
     {
         internal static string[] s_DBufferNames = { "_DBufferTexture0", "_DBufferTexture1", "_DBufferTexture2", "_DBufferTexture3" };
         internal static string s_DBufferDepthName = "DBufferDepth";
-
         static readonly int s_SSAOTextureID = Shader.PropertyToID("_ScreenSpaceOcclusionTexture");
 
         private DecalDrawDBufferSystem m_DrawSystem;
         private DBufferSettings m_Settings;
-        private Material m_DBufferClear;
 
         private FilteringSettings m_FilteringSettings;
         private List<ShaderTagId> m_ShaderTagIdList;
-        private ProfilingSampler m_DBufferClearSampler;
 
         private bool m_DecalLayers;
 
-        private RTHandle m_DBufferDepth;
+        private TextureHandle[] dbufferHandles;
 
+#if URP_COMPATIBILITY_MODE
+        private RTHandle m_DBufferDepth;
+        private Material m_DBufferClear;
+        private ProfilingSampler m_DBufferClearSampler;
         private PassData m_PassData;
 
         internal RTHandle[] dBufferColorHandles { get; private set; }
         internal RTHandle depthHandle { get; private set; }
         internal RTHandle dBufferDepth { get => m_DBufferDepth; }
-
-        private TextureHandle[] dbufferHandles;
+#endif
 
         public DBufferRenderPass(Material dBufferClear, DBufferSettings settings, DecalDrawDBufferSystem drawSystem, bool decalLayers)
         {
@@ -51,9 +51,7 @@ namespace UnityEngine.Rendering.Universal
 
             m_DrawSystem = drawSystem;
             m_Settings = settings;
-            m_DBufferClear = dBufferClear;
             profilingSampler = new ProfilingSampler("Draw DBuffer");
-            m_DBufferClearSampler = new ProfilingSampler("Clear");
             m_FilteringSettings = new FilteringSettings(RenderQueueRange.opaque, -1);
             m_DecalLayers = decalLayers;
 
@@ -61,19 +59,23 @@ namespace UnityEngine.Rendering.Universal
             m_ShaderTagIdList.Add(new ShaderTagId(DecalShaderPassNames.DBufferMesh));
             m_ShaderTagIdList.Add(new ShaderTagId(DecalShaderPassNames.DBufferProjectorVFX));
 
+#if URP_COMPATIBILITY_MODE
             int dBufferCount = (int)settings.surfaceData + 1;
             dBufferColorHandles = new RTHandle[dBufferCount];
 
+            m_DBufferClear = dBufferClear;
+            m_DBufferClearSampler = new ProfilingSampler("Clear");
             m_PassData = new PassData();
+#endif
         }
 
+#if URP_COMPATIBILITY_MODE
         public void Dispose()
         {
             m_DBufferDepth?.Release();
             foreach (var handle in dBufferColorHandles)
                 handle?.Release();
         }
-
         public void Setup(in CameraData cameraData)
         {
             var depthDesc = cameraData.cameraTargetDescriptor;
@@ -122,7 +124,7 @@ namespace UnityEngine.Rendering.Universal
             depthHandle = depthTextureHandle;
         }
 
-        [Obsolete(DeprecationMessage.CompatibilityScriptingAPIObsolete, false)]
+        [Obsolete(DeprecationMessage.CompatibilityScriptingAPIObsoleteFrom2023_3)]
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             // Disable obsolete warning for internal usage
@@ -131,7 +133,7 @@ namespace UnityEngine.Rendering.Universal
             #pragma warning restore CS0618
         }
 
-        [Obsolete(DeprecationMessage.CompatibilityScriptingAPIObsolete, false)]
+        [Obsolete(DeprecationMessage.CompatibilityScriptingAPIObsoleteFrom2023_3)]
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             InitPassData(ref m_PassData);
@@ -163,6 +165,7 @@ namespace UnityEngine.Rendering.Universal
                 ExecutePass(CommandBufferHelpers.GetRasterCommandBuffer(renderingData.commandBuffer), m_PassData, rendererList, false);
             }
         }
+#endif
 
         private static void ExecutePass(RasterCommandBuffer cmd, PassData passData, RendererList rendererList, bool renderGraph)
         {
@@ -170,6 +173,7 @@ namespace UnityEngine.Rendering.Universal
             cmd.DrawRendererList(rendererList);
         }
 
+#if URP_COMPATIBILITY_MODE
         private static void SetGlobalTextures(CommandBuffer cmd, PassData passData)
         {
             var dBufferColorHandles = passData.dBufferColorHandles;
@@ -179,6 +183,7 @@ namespace UnityEngine.Rendering.Universal
             if (passData.settings.surfaceData == DecalSurfaceData.AlbedoNormalMAOS)
                 cmd.SetGlobalTexture(dBufferColorHandles[2].name, dBufferColorHandles[2].nameID);
         }
+#endif
 
         private static void SetKeywords(RasterCommandBuffer cmd, PassData passData)
         {
@@ -205,8 +210,10 @@ namespace UnityEngine.Rendering.Universal
             passData.drawSystem = m_DrawSystem;
             passData.settings = m_Settings;
             passData.decalLayers = m_DecalLayers;
+#if URP_COMPATIBILITY_MODE
             passData.dBufferDepth = m_DBufferDepth;
             passData.dBufferColorHandles = dBufferColorHandles;
+#endif
         }
 
         private RendererListParams InitRendererListParams(UniversalRenderingData renderingData, UniversalCameraData cameraData, UniversalLightData lightData)
@@ -227,6 +234,8 @@ namespace UnityEngine.Rendering.Universal
             TextureHandle cameraNormalsTexture = resourceData.cameraNormalsTexture;
 
             TextureHandle depthTarget = resourceData.dBufferDepth.IsValid() ? resourceData.dBufferDepth : resourceData.activeDepthTexture;
+
+            TextureHandle renderingLayersTexture = resourceData.renderingLayersTexture;
 
             using (var builder = renderGraph.AddRasterRenderPass<PassData>(passName, out var passData, profilingSampler))
             {
@@ -271,8 +280,8 @@ namespace UnityEngine.Rendering.Universal
                     builder.UseTexture(cameraDepthTexture, AccessFlags.Read);
                 if (cameraNormalsTexture.IsValid())
                     builder.UseTexture(cameraNormalsTexture, AccessFlags.Read);
-                if (passData.decalLayers)
-                    builder.UseTexture(resourceData.renderingLayersTexture, AccessFlags.Read);
+                if (passData.decalLayers && renderingLayersTexture.IsValid())
+                    builder.UseTexture(renderingLayersTexture, AccessFlags.Read);
 
                 if (resourceData.ssaoTexture.IsValid())
                     builder.UseGlobalTexture(s_SSAOTextureID);
