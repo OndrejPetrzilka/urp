@@ -227,8 +227,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         /// <summary>
-        /// Utility method to convert RenderTextureDescriptor to TextureHandle and create a RenderGraph texture.
-        /// The use of RenderTextureDescriptor is obsolete with RenderGraph, use TextureDesc instead.
+        /// Utility method to convert RenderTextureDescriptor to TextureHandle and create a RenderGraph texture
         /// </summary>
         /// <param name="renderGraph"></param>
         /// <param name="desc"></param>
@@ -240,62 +239,48 @@ namespace UnityEngine.Rendering.Universal
         public static TextureHandle CreateRenderGraphTexture(RenderGraph renderGraph, RenderTextureDescriptor desc, string name, bool clear,
             FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Clamp)
         {
-            TextureDesc rgDesc;
-            GetTextureDesc(in desc, out rgDesc);
-
-            rgDesc.clearBuffer = clear;
-            rgDesc.name = name;
-            rgDesc.filterMode = filterMode;
-            rgDesc.wrapMode = wrapMode;
-
-            return renderGraph.CreateTexture(rgDesc);
-        }
-
-        internal static TextureHandle CreateRenderGraphTexture(RenderGraph renderGraph, in RenderTextureDescriptor desc, string name, bool clear, Color color,
-            FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Clamp, bool discardOnLastUse = false)
-        {
-            TextureDesc rgDesc;
-            GetTextureDesc(in desc, out rgDesc);
-
-            rgDesc.clearBuffer = clear;
-            rgDesc.clearColor = color;
-            rgDesc.msaaSamples = (MSAASamples)desc.msaaSamples;
-            rgDesc.name = name;
-            rgDesc.filterMode = filterMode;
-            rgDesc.wrapMode = wrapMode;
-            rgDesc.discardBuffer = discardOnLastUse;
-
-            return renderGraph.CreateTexture(rgDesc);
-        }
-
-        internal static void GetTextureDesc(in RenderTextureDescriptor desc, out TextureDesc rgDesc)
-        {
-            rgDesc = new TextureDesc(desc.width, desc.height);
+            TextureDesc rgDesc = new TextureDesc(desc.width, desc.height);
             rgDesc.dimension = desc.dimension;
+            rgDesc.clearBuffer = clear;
             rgDesc.bindTextureMS = desc.bindMS;
             rgDesc.format = (desc.depthStencilFormat != GraphicsFormat.None) ? desc.depthStencilFormat : desc.graphicsFormat;
-            rgDesc.isShadowMap = desc.shadowSamplingMode != ShadowSamplingMode.None && desc.depthStencilFormat != GraphicsFormat.None;
             rgDesc.slices = desc.volumeDepth;
             rgDesc.msaaSamples = (MSAASamples)desc.msaaSamples;
+            rgDesc.name = name;
             rgDesc.enableRandomWrite = desc.enableRandomWrite;
+            rgDesc.filterMode = filterMode;
+            rgDesc.wrapMode = wrapMode;
+            rgDesc.isShadowMap = desc.shadowSamplingMode != ShadowSamplingMode.None && desc.depthStencilFormat != GraphicsFormat.None;
+            rgDesc.vrUsage = desc.vrUsage;
             rgDesc.enableShadingRate = desc.enableShadingRate;
             rgDesc.useDynamicScale = desc.useDynamicScale;
             rgDesc.useDynamicScaleExplicit = desc.useDynamicScaleExplicit;
-            rgDesc.vrUsage = desc.vrUsage;
+
+            return renderGraph.CreateTexture(rgDesc);
         }
 
-        internal static TextureHandle CreateRenderGraphTexture(RenderGraph renderGraph, in TextureDesc desc, string name, bool clear, Color clearColor,
-                FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Clamp, bool discardOnLastUse = false)
+        internal static TextureHandle CreateRenderGraphTexture(RenderGraph renderGraph, RenderTextureDescriptor desc, string name, bool clear, Color color,
+            FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Clamp, bool discardOnLastUse = false)
         {
-            TextureDesc outDesc = desc;
-            outDesc.name = name;
-            outDesc.clearBuffer = clear;
-            outDesc.clearColor = clearColor;
-            outDesc.filterMode = filterMode;
-            outDesc.wrapMode = wrapMode;
-            outDesc.discardBuffer = discardOnLastUse;
+            TextureDesc rgDesc = new TextureDesc(desc.width, desc.height);
+            rgDesc.dimension = desc.dimension;
+            rgDesc.clearBuffer = clear;
+            rgDesc.clearColor = color;
+            rgDesc.bindTextureMS = desc.bindMS;
+            rgDesc.format = (desc.depthStencilFormat != GraphicsFormat.None) ? desc.depthStencilFormat : desc.graphicsFormat;
+            rgDesc.slices = desc.volumeDepth;
+            rgDesc.msaaSamples = (MSAASamples)desc.msaaSamples;
+            rgDesc.name = name;
+            rgDesc.enableRandomWrite = desc.enableRandomWrite;
+            rgDesc.filterMode = filterMode;
+            rgDesc.wrapMode = wrapMode;
+            rgDesc.enableShadingRate = desc.enableShadingRate;
+            rgDesc.useDynamicScale = desc.useDynamicScale;
+            rgDesc.useDynamicScaleExplicit = desc.useDynamicScaleExplicit;
+            rgDesc.discardBuffer = discardOnLastUse;
+            rgDesc.vrUsage = desc.vrUsage;
 
-            return renderGraph.CreateTexture(outDesc);
+            return renderGraph.CreateTexture(rgDesc);
         }
 
         bool RequiresIntermediateAttachments(UniversalCameraData cameraData, in RenderPassInputSummary renderPassInputs, bool requireCopyFromDepth, bool applyPostProcessing)
@@ -367,36 +352,36 @@ namespace UnityEngine.Rendering.Universal
             // Import backbuffers to Render Graph
             ImportBackBuffers(renderGraph, cameraData, clearCameraParams.clearValue, isCameraTargetOffscreenDepth);
 
-            TextureDesc cameraDescriptor;
-            GetTextureDesc(in cameraData.cameraTargetDescriptor, out cameraDescriptor);
-            cameraDescriptor.useMipMap = false;
-            cameraDescriptor.autoGenerateMips = false;
-            cameraDescriptor.mipMapBias = 0;
-            cameraDescriptor.anisoLevel = 1;
-
-            if (requireIntermediateAttachments)
+            // If required, create intermediate color attachment where URP will render before final blit
+            if (requireIntermediateAttachments && !isCameraTargetOffscreenDepth)
             {
-                cameraDescriptor.format = cameraData.cameraTargetDescriptor.graphicsFormat;
-
-                if (!isCameraTargetOffscreenDepth)
-                    CreateIntermediateCameraColorAttachment(renderGraph, cameraData, in cameraDescriptor, clearCameraParams.mustClearColor, clearCameraParams.clearValue);
-
-                cameraDescriptor.format = cameraData.cameraTargetDescriptor.depthStencilFormat;
-
-                CreateIntermediateCameraDepthAttachment(renderGraph, cameraData, in cameraDescriptor, clearCameraParams.mustClearDepth, clearCameraParams.clearValue, depthTextureIsDepthFormat);
+                CreateIntermediateCameraColorAttachment(renderGraph, cameraData, clearCameraParams.mustClearColor, clearCameraParams.clearValue);
             }
             else
             {
-                resourceData.SwitchActiveTexturesToBackbuffer();
+                resourceData.activeColorID = UniversalResourceData.ActiveID.BackBuffer;
             }
 
-            CreateCameraDepthCopyTexture(renderGraph, cameraDescriptor, depthTextureIsDepthFormat, clearCameraParams.clearValue);
+            // If required, create intermediate depth attachment
+            if (requireIntermediateAttachments)
+            {
+                CreateIntermediateCameraDepthAttachment(renderGraph, cameraData, clearCameraParams.mustClearDepth, clearCameraParams.clearValue, depthTextureIsDepthFormat);
+            }
+            else
+            {
+                resourceData.activeDepthID = UniversalResourceData.ActiveID.BackBuffer;
+            }
 
-            CreateCameraNormalsTexture(renderGraph, cameraDescriptor);
+            CreateCameraDepthCopyTexture(renderGraph, cameraData.cameraTargetDescriptor, depthTextureIsDepthFormat);
 
-            CreateMotionVectorTextures(renderGraph, cameraDescriptor);
+            CreateCameraNormalsTexture(renderGraph, cameraData.cameraTargetDescriptor);
 
-            CreateRenderingLayersTexture(renderGraph, cameraDescriptor);
+            CreateMotionVectorTextures(renderGraph, cameraData.cameraTargetDescriptor);
+
+            CreateRenderingLayersTexture(renderGraph, cameraData.cameraTargetDescriptor);
+
+            if (!isCameraTargetOffscreenDepth)
+                CreateAfterPostProcessTexture(renderGraph, cameraData.cameraTargetDescriptor);
         }
 
         private readonly struct ClearCameraParams
@@ -1271,11 +1256,10 @@ namespace UnityEngine.Rendering.Universal
 
             if (copySchedules.color == ColorCopySchedule.AfterSkybox)
             {
-                TextureHandle cameraColor = resourceData.cameraColor;
-                Debug.Assert(cameraColor.IsValid());
+                TextureHandle activeColor = resourceData.activeColorTexture;
                 Downsampling downsamplingMethod = UniversalRenderPipeline.asset.opaqueDownsampling;
                 TextureHandle cameraOpaqueTexture;
-                m_CopyColorPass.Render(renderGraph, frameData, out cameraOpaqueTexture, in cameraColor, downsamplingMethod);
+                m_CopyColorPass.Render(renderGraph, frameData, out cameraOpaqueTexture, in activeColor, downsamplingMethod);
                 resourceData.cameraOpaqueTexture = cameraOpaqueTexture;
             }
 
@@ -1802,29 +1786,28 @@ namespace UnityEngine.Rendering.Universal
             resourceData.backBufferDepth = renderGraph.ImportTexture(m_TargetDepthHandle, importInfoDepth, importBackbufferDepthParams);
         }
 
-        void CreateIntermediateCameraColorAttachment(RenderGraph renderGraph, UniversalCameraData cameraData, in TextureDesc cameraDescriptor, bool clearColor, Color clearBackgroundColor)
+        void CreateIntermediateCameraColorAttachment(RenderGraph renderGraph, UniversalCameraData cameraData, bool clearColor, Color clearBackgroundColor)
         {
             var resourceData = frameData.Get<UniversalResourceData>();
 
-            var desc = cameraDescriptor;
-            desc.useMipMap = false;
-            desc.autoGenerateMips = false;
-            desc.filterMode = FilterMode.Bilinear;
-            desc.wrapMode = TextureWrapMode.Clamp;
+            var cameraTargetDescriptor = cameraData.cameraTargetDescriptor;
+            cameraTargetDescriptor.useMipMap = false;
+            cameraTargetDescriptor.autoGenerateMips = false;
+            cameraTargetDescriptor.depthStencilFormat = GraphicsFormat.None;
 
             // When there's a single camera setup, there's no need to do the double buffer technique with attachment A/B, in order to save memory allocation
             // and simplify the workflow by using a RenderGraph texture directly.
             var isSingleCamera = cameraData.resolveFinalTarget && cameraData.renderType == CameraRenderType.Base;
             if (isSingleCamera)
             {
-                resourceData.cameraColor = CreateRenderGraphTexture(renderGraph, in desc, _SingleCameraTargetAttachmentName, clearColor, clearBackgroundColor, desc.filterMode, discardOnLastUse: cameraData.resolveFinalTarget);
+                resourceData.cameraColor = CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, _SingleCameraTargetAttachmentName, clearColor, clearBackgroundColor, FilterMode.Bilinear, discardOnLastUse: cameraData.resolveFinalTarget);
 
                 m_CurrentColorHandle = -1;
             }
             else
             {
-                RenderingUtils.ReAllocateHandleIfNeeded(ref m_RenderGraphCameraColorHandles[0], desc, _CameraTargetAttachmentAName);
-                RenderingUtils.ReAllocateHandleIfNeeded(ref m_RenderGraphCameraColorHandles[1], desc, _CameraTargetAttachmentBName);
+                RenderingUtils.ReAllocateHandleIfNeeded(ref m_RenderGraphCameraColorHandles[0], cameraTargetDescriptor, FilterMode.Bilinear, TextureWrapMode.Clamp, name: _CameraTargetAttachmentAName);
+                RenderingUtils.ReAllocateHandleIfNeeded(ref m_RenderGraphCameraColorHandles[1], cameraTargetDescriptor, FilterMode.Bilinear, TextureWrapMode.Clamp, name: _CameraTargetAttachmentBName);
 
                 // Make sure that the base camera always starts rendering to the ColorAttachmentA for deterministic frame results.
                 // Not doing so makes the targets look different every frame, causing the frame debugger to flash, and making debugging harder.
@@ -1843,62 +1826,65 @@ namespace UnityEngine.Rendering.Universal
             resourceData.activeColorID = UniversalResourceData.ActiveID.Camera;
         }
 
-        void CreateIntermediateCameraDepthAttachment(RenderGraph renderGraph, UniversalCameraData cameraData, in TextureDesc cameraDescriptor, bool clearDepth, Color clearBackgroundDepth, bool depthTextureIsDepthFormat)
+        void CreateIntermediateCameraDepthAttachment(RenderGraph renderGraph, UniversalCameraData cameraData, bool clearDepth, Color clearBackgroundDepth, bool depthTextureIsDepthFormat)
         {
             var resourceData = frameData.Get<UniversalResourceData>();
 
-            var desc = cameraDescriptor;
-            desc.useMipMap = false;
-            desc.autoGenerateMips = false;
+            var depthDescriptor = cameraData.cameraTargetDescriptor;
+            depthDescriptor.useMipMap = false;
+            depthDescriptor.autoGenerateMips = false;
 
-            bool hasMSAA = desc.msaaSamples != MSAASamples.None;
+            bool hasMSAA = depthDescriptor.msaaSamples > 1;
             bool resolveDepth = RenderingUtils.MultisampleDepthResolveSupported() && renderGraph.nativeRenderPassesEnabled;
 
             // If we aren't using hardware depth resolves and we have MSAA, we need to resolve depth manually by binding as an MSAA texture.
-            desc.bindTextureMS = !resolveDepth && hasMSAA;
+            depthDescriptor.bindMS = !resolveDepth && hasMSAA;
 
             // binding MS surfaces is not supported by the GLES backend, and it won't be fixed after investigating
             // the high performance impact of potential fixes, which would make it more expensive than depth prepass (fogbugz 1339401 for more info)
             if (IsGLESDevice())
-                desc.bindTextureMS = false;
+                depthDescriptor.bindMS = false;
 
-            desc.format = cameraDepthAttachmentFormat;
-            desc.filterMode = FilterMode.Point;
-            desc.wrapMode = TextureWrapMode.Clamp;
-
-            bool discardOnLastUse = cameraData.resolveFinalTarget; // Last camera in stack
-#if UNITY_EDITOR
-            // scene filtering will reuse "camera" depth  from the normal pass for the "filter highlight" effect
-            if (cameraData.isSceneViewCamera && CoreUtils.IsSceneFilteringEnabled())
-                discardOnLastUse = false;
-#endif
+            depthDescriptor.graphicsFormat = GraphicsFormat.None;
+            depthDescriptor.depthStencilFormat = cameraDepthAttachmentFormat;
 
             // When there's a single camera setup, we can simplify the workflow by using a RenderGraph texture directly.
             // In the multi camera setup case, we still have to use import mechanism because each camera records its own graph; they share the imported intermediate depth texture.
             var isSingleCamera = cameraData.resolveFinalTarget && cameraData.renderType == CameraRenderType.Base;
             if (isSingleCamera)
             {
-                resourceData.cameraDepth = CreateRenderGraphTexture(renderGraph, desc, _CameraDepthAttachmentName, clearDepth, clearBackgroundDepth, desc.filterMode, desc.wrapMode, discardOnLastUse: discardOnLastUse);
+                bool discardOnLastUse = cameraData.resolveFinalTarget; // Last camera in stack
+#if UNITY_EDITOR
+                // scene filtering will reuse "camera" depth  from the normal pass for the "filter highlight" effect
+                if (cameraData.isSceneViewCamera && CoreUtils.IsSceneFilteringEnabled())
+                    discardOnLastUse = false;
+#endif
+                resourceData.cameraDepth = CreateRenderGraphTexture(renderGraph, depthDescriptor, _CameraDepthAttachmentName, clearDepth, clearBackgroundDepth, FilterMode.Point, TextureWrapMode.Clamp, discardOnLastUse: discardOnLastUse);
             }
             else
             {
-                RenderingUtils.ReAllocateHandleIfNeeded(ref m_RenderGraphCameraDepthHandle, desc, _CameraDepthAttachmentName);
+                RenderingUtils.ReAllocateHandleIfNeeded(ref m_RenderGraphCameraDepthHandle, depthDescriptor, FilterMode.Point, TextureWrapMode.Clamp, name: _CameraDepthAttachmentName);
 
                 ImportResourceParams importDepthParams = new ImportResourceParams();
                 importDepthParams.clearOnFirstUse = clearDepth;
                 importDepthParams.clearColor = clearBackgroundDepth;
-                importDepthParams.discardOnLastUse = discardOnLastUse;
+                importDepthParams.discardOnLastUse = cameraData.resolveFinalTarget; // Last camera in stack
 
+#if UNITY_EDITOR
+                // scene filtering will reuse "camera" depth  from the normal pass for the "filter highlight" effect
+                if (cameraData.isSceneViewCamera && CoreUtils.IsSceneFilteringEnabled())
+                    importDepthParams.discardOnLastUse = false;
+#endif
                 resourceData.cameraDepth = renderGraph.ImportTexture(m_RenderGraphCameraDepthHandle, importDepthParams);
             }
 
             resourceData.activeDepthID = UniversalResourceData.ActiveID.Camera;
 
             // Configure the copy depth pass based on the allocated depth texture
-            m_CopyDepthPass.MsaaSamples = (int) desc.msaaSamples;
+            m_CopyDepthPass.MsaaSamples = depthDescriptor.msaaSamples;
             m_CopyDepthPass.CopyToDepth = depthTextureIsDepthFormat;
 
-            var copyResolvedDepth = !desc.bindTextureMS;
+            var copyResolvedDepth = !depthDescriptor.bindMS;
             m_CopyDepthPass.m_CopyResolvedDepth = copyResolvedDepth;
 
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -1906,58 +1892,62 @@ namespace UnityEngine.Rendering.Universal
 #endif
         }
 
-        void CreateCameraDepthCopyTexture(RenderGraph renderGraph, TextureDesc descriptor, bool isDepthTexture, Color clearColor)
+        void CreateCameraDepthCopyTexture(RenderGraph renderGraph, RenderTextureDescriptor descriptor, bool isDepthTexture)
         {
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
 
             var depthDescriptor = descriptor;
-            depthDescriptor.msaaSamples = MSAASamples.None;// Depth-Only pass don't use MSAA
-                       
+            depthDescriptor.msaaSamples = 1;// Depth-Only pass don't use MSAA
 
             if (isDepthTexture)
             {
-                depthDescriptor.format = cameraDepthTextureFormat;
-                depthDescriptor.clearBuffer = true; //will be rendered to
+                depthDescriptor.graphicsFormat = GraphicsFormat.None;
+                depthDescriptor.depthStencilFormat = cameraDepthTextureFormat;
             }
             else
             {
-                depthDescriptor.format = GraphicsFormat.R32_SFloat;
-                depthDescriptor.clearBuffer = false; //will be copied to
+                depthDescriptor.graphicsFormat = GraphicsFormat.R32_SFloat;
+                depthDescriptor.depthStencilFormat = GraphicsFormat.None;
             }
 
-            resourceData.cameraDepthTexture = CreateRenderGraphTexture(renderGraph, depthDescriptor, "_CameraDepthTexture", depthDescriptor.clearBuffer, clearColor);
+            resourceData.cameraDepthTexture = CreateRenderGraphTexture(renderGraph, depthDescriptor, "_CameraDepthTexture", true);
         }
 
-        void CreateMotionVectorTextures(RenderGraph renderGraph, TextureDesc descriptor)
+        void CreateMotionVectorTextures(RenderGraph renderGraph, RenderTextureDescriptor descriptor)
         {
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
 
-            descriptor.msaaSamples = MSAASamples.None; // Disable MSAA, consider a pixel resolve for half left velocity and half right velocity --> no velocity, which is untrue.
+            var colorDesc = descriptor;
+            colorDesc.msaaSamples = 1;  // Disable MSAA, consider a pixel resolve for half left velocity and half right velocity --> no velocity, which is untrue.
+            colorDesc.graphicsFormat = MotionVectorRenderPass.k_TargetFormat;
+            colorDesc.depthStencilFormat = GraphicsFormat.None;
+            resourceData.motionVectorColor = CreateRenderGraphTexture(renderGraph, colorDesc, MotionVectorRenderPass.k_MotionVectorTextureName, true);
 
-            descriptor.format = MotionVectorRenderPass.k_TargetFormat;
-
-            resourceData.motionVectorColor = CreateRenderGraphTexture(renderGraph, descriptor, MotionVectorRenderPass.k_MotionVectorTextureName, true, Color.black);
-
-            descriptor.format = cameraDepthAttachmentFormat;
-            resourceData.motionVectorDepth = CreateRenderGraphTexture(renderGraph, descriptor, MotionVectorRenderPass.k_MotionVectorDepthTextureName, true, Color.black);
+            var depthDescriptor = descriptor;
+            depthDescriptor.msaaSamples = 1;
+            depthDescriptor.graphicsFormat = GraphicsFormat.None;
+            depthDescriptor.depthStencilFormat = cameraDepthAttachmentFormat;
+            resourceData.motionVectorDepth = CreateRenderGraphTexture(renderGraph, depthDescriptor, MotionVectorRenderPass.k_MotionVectorDepthTextureName, true);
         }
 
-        void CreateCameraNormalsTexture(RenderGraph renderGraph, TextureDesc descriptor)
+        void CreateCameraNormalsTexture(RenderGraph renderGraph, RenderTextureDescriptor descriptor)
         {
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
 
-            descriptor.msaaSamples = MSAASamples.None; // Never use MSAA for the normal texture!
+            var normalDescriptor = descriptor;
+            normalDescriptor.depthStencilFormat = GraphicsFormat.None;
+            normalDescriptor.msaaSamples = 1; // Never use MSAA for the normal texture!
             // Find compatible render-target format for storing normals.
             // Shader code outputs normals in signed format to be compatible with deferred gbuffer layout.
             // Deferred gbuffer format is signed so that normals can be blended for terrain geometry.
             var normalsName = !usesDeferredLighting ?
                 DepthNormalOnlyPass.k_CameraNormalsTextureName : DeferredLights.k_GBufferNames[m_DeferredLights.GBufferNormalSmoothnessIndex];
-            descriptor.format = !usesDeferredLighting ?
+            normalDescriptor.graphicsFormat = !usesDeferredLighting ?
                 DepthNormalOnlyPass.GetGraphicsFormat() : m_DeferredLights.GetGBufferFormat(m_DeferredLights.GBufferNormalSmoothnessIndex);
-            resourceData.cameraNormalsTexture = CreateRenderGraphTexture(renderGraph, descriptor, normalsName, true, Color.black);
+            resourceData.cameraNormalsTexture = CreateRenderGraphTexture(renderGraph, normalDescriptor, normalsName, true);
         }
 
-        void CreateRenderingLayersTexture(RenderGraph renderGraph, TextureDesc descriptor)
+        void CreateRenderingLayersTexture(RenderGraph renderGraph, RenderTextureDescriptor descriptor)
         {
             if (m_RequiresRenderingLayer)
             {
@@ -1969,18 +1959,20 @@ namespace UnityEngine.Rendering.Universal
                 if (usesDeferredLighting && m_DeferredLights.UseRenderingLayers)
                     m_RenderingLayersTextureName = DeferredLights.k_GBufferNames[m_DeferredLights.GBufferRenderingLayers];
 
+                RenderTextureDescriptor renderingLayersDescriptor = descriptor;
+                renderingLayersDescriptor.depthStencilFormat = GraphicsFormat.None;
                 if (!m_RenderingLayerProvidesRenderObjectPass)
-                    descriptor.msaaSamples = MSAASamples.None;// Depth-Only pass don't use MSAA
+                    renderingLayersDescriptor.msaaSamples = 1;// Depth-Only pass don't use MSAA
 
                 // Find compatible render-target format for storing normals.
                 // Shader code outputs normals in signed format to be compatible with deferred gbuffer layout.
                 // Deferred gbuffer format is signed so that normals can be blended for terrain geometry.
                 if (usesDeferredLighting && m_RequiresRenderingLayer)
-                    descriptor.format = m_DeferredLights.GetGBufferFormat(m_DeferredLights.GBufferRenderingLayers); // the one used by the gbuffer.
+                    renderingLayersDescriptor.graphicsFormat = m_DeferredLights.GetGBufferFormat(m_DeferredLights.GBufferRenderingLayers); // the one used by the gbuffer.
                 else
-                    descriptor.format = RenderingLayerUtils.GetFormat(m_RenderingLayersMaskSize);
+                    renderingLayersDescriptor.graphicsFormat = RenderingLayerUtils.GetFormat(m_RenderingLayersMaskSize);
 
-                resourceData.renderingLayersTexture = CreateRenderGraphTexture(renderGraph, descriptor, m_RenderingLayersTextureName, true, descriptor.clearColor);
+                resourceData.renderingLayersTexture = CreateRenderGraphTexture(renderGraph, renderingLayersDescriptor, m_RenderingLayersTextureName, true);
             }
         }
 
