@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine.TestTools;
+using UnityEngine;
 
 namespace UnityEditor.Rendering.Universal.Tools
 {
@@ -49,6 +51,19 @@ namespace UnityEditor.Rendering.Universal.Tools
             Assert.IsFalse(ok);
         }
 
+        [Test]
+        public void RunInBatchMode_LogsUsageWarning()
+        {
+            LogAssert.Expect(
+                LogType.Warning,
+                "Using this API can lead to incomplete or unpredictable conversion outcomes. " +
+                "For reliable results, please perform the conversion via the dedicated window: " +
+                "Window > Rendering > Render Pipeline Converter."
+            );
+
+            bool _ = Converters.RunInBatchMode(new List<Type>() {});
+        }
+
 #pragma warning disable CS0618 // Type or member is obsolete
         public static IEnumerable<TestCaseData> TestCases()
         {
@@ -79,7 +94,7 @@ namespace UnityEditor.Rendering.Universal.Tools
                 {
                     typeof(AnimationClipConverter),
                     typeof(BuiltInToURP3DMaterialUpgrader),
-                    typeof(ReadonlyMaterialConverter),
+                    typeof(BuiltInToURP3DReadonlyMaterialConverter),
                 }
             ).SetName("When Using Exclusive filter. The filter returns everything except the given ids");
 
@@ -99,10 +114,10 @@ namespace UnityEditor.Rendering.Universal.Tools
 #if PPV2_EXISTS
                     typeof(PPv2Converter),
 #endif
-                    typeof(RenderSettingsConverter),
+                    typeof(BuiltInToURP3DRenderSettingsConverter),
                     typeof(AnimationClipConverter),
                     typeof(BuiltInToURP3DMaterialUpgrader),
-                    typeof(ReadonlyMaterialConverter),
+                    typeof(BuiltInToURP3DReadonlyMaterialConverter),
                  }
             ).SetName("BuiltInToURP - When Using Exclusive filter with no converters. The filter returns everything");
 
@@ -112,7 +127,8 @@ namespace UnityEditor.Rendering.Universal.Tools
                 ConverterFilter.Exclusive,
                  new List<Type>
                  {
-                    typeof(BuiltInToURP2DMaterialUpgrader),
+                    typeof(BuiltInToURP2DRenderSettingsConverter),
+                    typeof(BuiltInToURP2DReadonlyMaterialConverter),
                  }
             ).SetName("BuiltInToURP2D - When Using Exclusive filter with no converters. The filter returns everything");
 

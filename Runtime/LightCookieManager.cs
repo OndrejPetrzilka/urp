@@ -86,8 +86,8 @@ namespace UnityEngine.Rendering.Universal
                 if (d == 0)
                 {
                     // Sort by texture ID if "undecided" to batch fetches to the same cookie texture.
-                    var ai = alc.GetEntityId().GetRawData();
-                    var bi = blc.GetEntityId().GetRawData();
+                    var ai = EntityId.ToULong(alc.GetEntityId());
+                    var bi = EntityId.ToULong(blc.GetEntityId());
                     return (int)(ai - bi);
                 }
                 return d;
@@ -677,7 +677,7 @@ namespace UnityEngine.Rendering.Universal
             }
             else
             {
-                m_AdditionalLightsCookieAtlas.AllocateTexture(cmd, ref uvScaleOffset, cookie, scaledWidth, scaledHeight, Texture2DAtlas.TextureIdentifier.None);
+                m_AdditionalLightsCookieAtlas.AllocateTexture(cmd, ref uvScaleOffset, cookie, scaledWidth, scaledHeight);
             }
 
             AdjustUVRect(ref uvScaleOffset, cookie, ref scaledCookieSize);
@@ -702,7 +702,7 @@ namespace UnityEngine.Rendering.Universal
             }
             else
             {
-                m_AdditionalLightsCookieAtlas.AllocateTexture(cmd, ref uvScaleOffset, cookie, scaledOctCookieSize, scaledOctCookieSize, Texture2DAtlas.TextureIdentifier.None);
+                m_AdditionalLightsCookieAtlas.AllocateTexture(cmd, ref uvScaleOffset, cookie, scaledOctCookieSize, scaledOctCookieSize);
             }
 
             // Cookie size in the atlas might not match CookieTexture size.

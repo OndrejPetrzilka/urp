@@ -109,8 +109,7 @@ namespace UnityEngine.Rendering.Universal
                 m_CopyDepthPass = new CopyDepthPass(
                     RenderPassEvent.AfterRenderingTransparents,
                     renderer2DResources.copyDepthPS,
-                    shouldClear: true,
-                    copyResolvedDepth: RenderingUtils.MultisampleDepthResolveSupported());
+                    shouldClear: true);
             }
 
             m_UpscalePass = new UpscalePass(RenderPassEvent.AfterRenderingPostProcessing, m_BlitMaterial);
@@ -464,20 +463,8 @@ namespace UnityEngine.Rendering.Universal
                     depthDescriptor.useMipMap = false;
                     depthDescriptor.autoGenerateMips = false;
 
-                    bool hasMSAA = depthDescriptor.msaaSamples > 1 && (SystemInfo.supportsMultisampledTextures != 0);
-                    bool resolveDepth = RenderingUtils.MultisampleDepthResolveSupported() && renderGraph.nativeRenderPassesEnabled;
-
-                    depthDescriptor.bindMS = !resolveDepth && hasMSAA;
-
-                    // binding MS surfaces is not supported by the GLES backend
-                    if (IsGLESDevice())
-                        depthDescriptor.bindMS = false;
-
-                    if (m_CopyDepthPass != null)
-                    {
-                        m_CopyDepthPass.MsaaSamples = depthDescriptor.msaaSamples;
-                        m_CopyDepthPass.m_CopyResolvedDepth = !depthDescriptor.bindMS;
-                    }
+                    bool hasMSAA = depthDescriptor.msaaSamples > 1;
+                    depthDescriptor.bindMS = hasMSAA && RenderingUtils.ShouldDepthAttachmentBindMS();
 
                     depthDescriptor.graphicsFormat = GraphicsFormat.None;
                     depthDescriptor.depthStencilFormat = CoreUtils.GetDefaultDepthStencilFormat();
@@ -844,15 +831,7 @@ namespace UnityEngine.Rendering.Universal
             // Default Render Pass
             for (var i = 0; i < batchCount; i++)
             {
-                if (!renderGraph.nativeRenderPassesEnabled && i == 0)
-                {
-                    RTClearFlags clearFlags = (RTClearFlags)GetCameraClearFlag(cameraData);
-                    if (clearFlags != RTClearFlags.None)
-                        ClearTargetsPass.Render(renderGraph, commonResourceData.activeColorTexture, commonResourceData.activeDepthTexture, clearFlags, cameraData.backgroundColor);
-                }
-
                 RecordCustomRenderGraphPasses(renderGraph, RenderPassEvent2D.BeforeRenderingSprites, i);
-
 
                 LayerUtility.GetFilterSettings(m_Renderer2DData, layerBatches[i], out var filterSettings);
                 m_RendererPass.Render(renderGraph, frameData, i, ref filterSettings);

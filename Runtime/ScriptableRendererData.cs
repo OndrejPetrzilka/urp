@@ -39,7 +39,6 @@ namespace UnityEngine.Rendering.Universal
 
         [SerializeField] internal List<ScriptableRendererFeature> m_RendererFeatures = new List<ScriptableRendererFeature>(10);
         [SerializeField] internal List<long> m_RendererFeatureMap = new List<long>(10);
-        [SerializeField] bool m_UseNativeRenderPass = false;
         [NonSerialized]
         bool m_StripShadowsOffVariants = false;
         [NonSerialized]
@@ -91,19 +90,6 @@ namespace UnityEngine.Rendering.Universal
         }
 
         /// <summary>
-        /// Specifies whether the renderer should use Native Render Pass.
-        /// </summary>
-        public bool useNativeRenderPass
-        {
-            get => m_UseNativeRenderPass;
-            set
-            {
-                SetDirty();
-                m_UseNativeRenderPass = value;
-            }
-        }
-
-        /// <summary>
         /// Returns true if contains renderer feature with specified type.
         /// </summary>
         /// <param name="rendererFeature">RenderFeature output parameter.</param>
@@ -136,6 +122,15 @@ namespace UnityEngine.Rendering.Universal
 
         internal bool ValidateRendererFeatures()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+            {
+                // UUM-125400 Asset Import Worker Process encounters a race condition when it tries to validate
+                // RendererFeatures. If we're coming from the AssetImportWorkerProcess, exit early and return
+                // true because it's safe to assume that (1) the features are validated by another process and
+                // (2) it shouldn't be the Asset Import Worker's job to validate RendererFeatures.
+                return true;
+            }
+
             // Get all Subassets
             var subassets = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(this));
             var linkedIds = new List<long>();
