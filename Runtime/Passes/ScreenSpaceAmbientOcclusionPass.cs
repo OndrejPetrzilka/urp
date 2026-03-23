@@ -440,22 +440,22 @@ namespace UnityEngine.Rendering.Universal
             }
 
             switch (m_CurrentSettings.BlurQuality)
-                    {
-                        case ScreenSpaceAmbientOcclusionSettings.BlurQualityOptions.High:
+            {
+                case ScreenSpaceAmbientOcclusionSettings.BlurQualityOptions.High:
                     RecordBlurStep(renderGraph, cameraData, "Blur SSAO Horizontal (High)", aoTexture, blurTexture, (int)ShaderPasses.BilateralBlurHorizontal, false);
                     RecordBlurStep(renderGraph, cameraData, "Blur SSAO Vertical (High)", blurTexture, aoTexture, (int)ShaderPasses.BilateralBlurVertical, false);
                     RecordBlurStep(renderGraph, cameraData, "Blur SSAO Final (High)", aoTexture, finalTexture, (int)(m_CurrentSettings.AfterOpaque ? ShaderPasses.BilateralAfterOpaque : ShaderPasses.BilateralBlurFinal), true);
-                            break;
-                        case ScreenSpaceAmbientOcclusionSettings.BlurQualityOptions.Medium:
+                    break;
+                case ScreenSpaceAmbientOcclusionSettings.BlurQualityOptions.Medium:
                     RecordBlurStep(renderGraph, cameraData, "Blur SSAO Horizontal (Medium)", aoTexture, blurTexture, (int)ShaderPasses.GaussianBlurHorizontal, false);
                     RecordBlurStep(renderGraph, cameraData, "Blur SSAO Final (Medium)", blurTexture, finalTexture, (int)(m_CurrentSettings.AfterOpaque ? ShaderPasses.GaussianAfterOpaque : ShaderPasses.GaussianBlurVertical), true);
-                            break;
-                        case ScreenSpaceAmbientOcclusionSettings.BlurQualityOptions.Low:
+                    break;
+                case ScreenSpaceAmbientOcclusionSettings.BlurQualityOptions.Low:
                     RecordBlurStep(renderGraph, cameraData, "Blur SSAO (Low)", aoTexture, finalTexture, (int)(m_CurrentSettings.AfterOpaque ? ShaderPasses.KawaseAfterOpaque : ShaderPasses.KawaseBlur), true);
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
             if (!m_CurrentSettings.AfterOpaque)
             {
@@ -474,12 +474,12 @@ namespace UnityEngine.Rendering.Universal
 
                     builder.SetRenderFunc(static (SSAOFinalPassData data, RasterGraphContext ctx) =>
                     {
-                    // We only want URP shaders to sample SSAO if After Opaque is disabled...
+                        // We only want URP shaders to sample SSAO if After Opaque is disabled...
                         ctx.cmd.SetKeyword(ShaderGlobalKeywords.ScreenSpaceOcclusion, true);
                         ctx.cmd.SetGlobalVector(s_AmbientOcclusionParamID, new Vector4(1f, 0f, 0f, data.directLightingStrength));
-                });
+                    });
+                }
             }
-        }
         }
 
         private void CreateRenderTextureHandles(RenderGraph renderGraph, UniversalResourceData resourceData,
