@@ -74,7 +74,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
 
             // terrain shaders are always opaque, so these values are hardcoded to not inherit from the Universal Target
             var renderTypeOpaque = RenderType.Opaque.ToString();
-            var renderQueue = target.alphaClip ? RenderQueue.AlphaTest.ToString() : RenderQueue.Geometry.ToString();
+            var renderQueue = target.alphaClip?RenderQueue.AlphaTest.ToString():RenderQueue.Geometry.ToString();
 
             context.AddSubShader(PostProcessSubShader(TerrainSubShaders.LitComputeDotsSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
             context.AddSubShader(PostProcessSubShader(TerrainSubShaders.LitGLESSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
@@ -121,15 +121,15 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
         public override void GetActiveBlocks(ref TargetActiveBlockContext context)
         {
             context.AddBlock(BlockFields.SurfaceDescription.Smoothness);
-            context.AddBlock(BlockFields.SurfaceDescription.NormalOS, normalDropOffSpace == NormalDropOffSpace.Object);
-            context.AddBlock(BlockFields.SurfaceDescription.NormalTS, normalDropOffSpace == NormalDropOffSpace.Tangent);
-            context.AddBlock(BlockFields.SurfaceDescription.NormalWS, normalDropOffSpace == NormalDropOffSpace.World);
+            context.AddBlock(BlockFields.SurfaceDescription.NormalOS,    normalDropOffSpace == NormalDropOffSpace.Object);
+            context.AddBlock(BlockFields.SurfaceDescription.NormalTS,    normalDropOffSpace == NormalDropOffSpace.Tangent);
+            context.AddBlock(BlockFields.SurfaceDescription.NormalWS,    normalDropOffSpace == NormalDropOffSpace.World);
             context.AddBlock(BlockFields.SurfaceDescription.Emission);
             context.AddBlock(BlockFields.SurfaceDescription.Occlusion);
 
             // when the surface options are material controlled, we must show all of these blocks
             // when target controlled, we can cull the unnecessary blocks
-            context.AddBlock(BlockFields.SurfaceDescription.Specular, target.allowMaterialOverride);
+            context.AddBlock(BlockFields.SurfaceDescription.Specular,    target.allowMaterialOverride);
             context.AddBlock(BlockFields.SurfaceDescription.Metallic);
             context.AddBlock(BlockFields.SurfaceDescription.Alpha, target.alphaClip);
             context.AddBlock(BlockFields.SurfaceDescription.AlphaClipThreshold, target.alphaClip);
@@ -395,7 +395,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 onChange();
             });
 
-            context.AddProperty("Receive Shadows", new Toggle() { value = target.receiveShadows }, (evt) =>
+            context.AddProperty("Receive Shadows", new Toggle() {value = target.receiveShadows}, (evt) =>
             {
                 if (Equals(target.receiveShadows, evt.newValue))
                     return;
@@ -758,7 +758,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
         {
             private static InstancingOptions[] InstancingOptionList()
             {
-                return new[]
+                return new []
                 {
                     InstancingOptions.AssumeUniformScaling,
                     InstancingOptions.NoMatrices,
@@ -916,7 +916,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 result.keywords.Add(TerrainDefines.TerrainInstancedPerPixelNormal);
                 result.defines.Add(TerrainDefines.MetallicSpecGlossMap, 1);
                 result.defines.Add(TerrainDefines.SmoothnessTextureAlbedoChannelA, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 CorePasses.AddAlphaClipControlToPass(ref result, target);
                 AddReceiveShadowsControlToPass(ref result, target, target.receiveShadows);
@@ -966,7 +966,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 result.keywords.Add(TerrainDefines.TerrainInstancedPerPixelNormal);
                 result.defines.Add(TerrainDefines.MetallicSpecGlossMap, 1);
                 result.defines.Add(TerrainDefines.SmoothnessTextureAlbedoChannelA, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 CorePasses.AddAlphaClipControlToPass(ref result, target);
                 AddReceiveShadowsControlToPass(ref result, target, target.receiveShadows);
@@ -1000,7 +1000,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                     renderStates = CoreRenderStates.ShadowCaster(target),
                     pragmas = TerrainCorePragmas.Instanced,
                     defines = new DefineCollection(),
-                    keywords = new KeywordCollection() { CoreKeywords.ShadowCaster, },
+                    keywords = new KeywordCollection() { CoreKeywords.ShadowCaster,  },
                     includes = TerrainCoreIncludes.ShadowCaster,
 
                     // Custom Interpolator Support
@@ -1008,7 +1008,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 };
 
                 result.defines.Add(TerrainDefines.TerrainEnabled, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 if (target.alphaClip)
                     result.defines.Add(CoreKeywordDescriptors.AlphaTestOn, 1);
@@ -1051,7 +1051,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 };
 
                 result.defines.Add(TerrainDefines.TerrainEnabled, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 if (target.alphaClip)
                     result.defines.Add(CoreKeywordDescriptors.AlphaTestOn, 1);
@@ -1096,7 +1096,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 result.defines.Add(TerrainDefines.TerrainEnabled, 1);
                 result.defines.Add(TerrainDefines.TerrainSplat01, 1);
                 result.defines.Add(TerrainDefines.TerrainSplat23, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
                 result.keywords.Add(TerrainDefines.TerrainNormalmap);
                 result.keywords.Add(TerrainDefines.TerrainInstancedPerPixelNormal);
 
@@ -1144,7 +1144,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 result.defines.Add(TerrainDefines.TerrainSplat23, 1);
                 result.defines.Add(TerrainDefines.MetallicSpecGlossMap, 1);
                 result.defines.Add(TerrainDefines.SmoothnessTextureAlbedoChannelA, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 if (target.alphaClip)
                     result.defines.Add(CoreKeywordDescriptors.AlphaTestOn, 1);
@@ -1187,7 +1187,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 };
 
                 result.defines.Add(TerrainDefines.TerrainEnabled, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 if (target.alphaClip)
                     result.defines.Add(CoreKeywordDescriptors.AlphaTestOn, 1);
@@ -1230,7 +1230,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 };
 
                 result.defines.Add(TerrainDefines.TerrainEnabled, 1);
-                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip ? 1 : 0);
+                result.defines.Add(TerrainDefines.TerrainAlphaClipEnable, target.alphaClip?1:0);
 
                 if (target.alphaClip)
                     result.defines.Add(CoreKeywordDescriptors.AlphaTestOn, 1);
