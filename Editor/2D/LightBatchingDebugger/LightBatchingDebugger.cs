@@ -42,12 +42,10 @@ namespace UnityEditor.Rendering.Universal
 
         // Variables used for refresh view
         private bool doRefresh;
-        private int cachedSceneHandle;
-        private Vector3 cachedCamPos;
+        private SceneHandle cachedSceneHandle;
         private int totalLightCount;
         private int totalShadowCount;
-        private string[] cachedLightNames;
-        private string[] cachedShadowCasterNames;
+        private Vector3 cachedCamPos;
 
         ILight2DCullResult lightCullResult
         {
@@ -120,9 +118,6 @@ namespace UnityEditor.Rendering.Universal
             var bubble = new Button();
             bubble.AddToClassList("Pill");
             bubble.text = obj.name;
-            bubble.style.maxWidth = 200;
-            bubble.style.overflow = Overflow.Hidden;
-            bubble.style.textOverflow = TextOverflow.Ellipsis;
 
             bubble.clicked += () =>
             {
@@ -474,20 +469,8 @@ namespace UnityEditor.Rendering.Universal
 
             if (lightCullResult.IsGameView())
             {
-                var visibleShadows = lightCullResult.visibleShadows.SelectMany(x => x.GetShadowCasters()).ToList();
-
                 isDirty |= totalLightCount != lightCullResult.visibleLights.Count();
-                isDirty |= totalShadowCount != visibleShadows.Count();
-
-                // Account for name changes
-                if (!isDirty)
-                {
-                    for (int i = 0; i < totalLightCount; ++i)
-                        isDirty |= !lightCullResult.visibleLights.Exists(x => x != null && x.name == cachedLightNames[i]);
-
-                    for (int i = 0; i < totalShadowCount; ++i)
-                        isDirty |= !visibleShadows.Exists(x => x != null && x.name == cachedShadowCasterNames[i]);
-                }
+                isDirty |= totalShadowCount != lightCullResult.visibleShadows.Count();
             }
 
             return isDirty;
@@ -502,27 +485,8 @@ namespace UnityEditor.Rendering.Universal
 
             if (lightCullResult != null)
             {
-                var visibleShadows = lightCullResult.visibleShadows.SelectMany(x => x.GetShadowCasters());
-
                 totalLightCount = lightCullResult.visibleLights.Count();
-                totalShadowCount = visibleShadows.Count();
-
-                cachedLightNames = new string[totalLightCount];
-                cachedShadowCasterNames = new string[totalShadowCount];
-
-                for (int i = 0; i < totalLightCount; ++i)
-                {
-                    var light = lightCullResult.visibleLights[i];
-                    if (light != null)
-                        cachedLightNames[i] = light.name;
-                }
-
-                for (int i = 0; i < totalShadowCount; ++i)
-                {
-                    var shadowCaster = visibleShadows.ElementAt(i);
-                    if (shadowCaster != null)
-                        cachedShadowCasterNames[i] = shadowCaster.name;
-                }
+                totalShadowCount = lightCullResult.visibleShadows.Count();
             }
 
             doRefresh = false;
