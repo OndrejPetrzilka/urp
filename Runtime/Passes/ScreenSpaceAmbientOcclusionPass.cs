@@ -135,9 +135,9 @@ namespace UnityEngine.Rendering.Universal
             // RenderPass Event + Source Settings (Depth / Depth&Normals
             if (renderer is UniversalRenderer { usesDeferredLighting: true })
             {
-                renderPassEvent = m_CurrentSettings.AfterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.AfterRenderingPrePasses;
+                renderPassEvent = m_CurrentSettings.AfterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.BeforeRenderingDeferredLights;
 
-                m_CurrentSettings.Source = ScreenSpaceAmbientOcclusionSettings.DepthSource.DepthNormals;
+                //m_CurrentSettings.Source = ScreenSpaceAmbientOcclusionSettings.DepthSource.DepthNormals;
             }
             else
             {
