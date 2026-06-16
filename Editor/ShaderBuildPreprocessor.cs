@@ -73,9 +73,9 @@ namespace UnityEditor.Rendering.Universal
         StencilLODCrossFade = (1L << 50),
         DeferredPlus = (1L << 51),
         ReflectionProbeAtlas = (1L << 52),
-        PointSamplingUpsampling = (1L << 53),
+        PointSamplingUpsampling = (1L << 54),
 #if SURFACE_CACHE
-        SurfaceCache = (1L << 54),
+        SurfaceCache = (1L << 55),
 #endif
         All = ~0
     }
