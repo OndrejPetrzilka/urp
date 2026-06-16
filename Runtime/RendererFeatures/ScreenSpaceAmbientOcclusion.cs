@@ -176,8 +176,8 @@ namespace UnityEngine.Rendering.Universal
             RenderPassEvent passEvent;
             if (usesDeferred)
             {
-                passEvent = m_Settings.AfterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.AfterRenderingPrePasses;
-                requirements = ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Normal;
+                passEvent = m_Settings.AfterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.BeforeRenderingDeferredLights; // CHANGE: when NOT after opaque, use BeforeRenderingDeferredLights instead of AfterPrepasses
+                requirements = m_Settings.Source == ScreenSpaceAmbientOcclusionSettings.DepthSource.Depth ? ScriptableRenderPassInput.Depth : ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Normal; // CHANGE: Always use settings, don't force DepthNormals for deferred
             }
             else
             {
@@ -213,7 +213,7 @@ namespace UnityEngine.Rendering.Universal
 
             m_SSAOPass.renderPassEvent = passEvent;
             m_SSAOPass.ConfigureInput(requirements);
-            var effectiveDepthSource = usesDeferred ? ScreenSpaceAmbientOcclusionSettings.DepthSource.DepthNormals : m_Settings.Source;
+            var effectiveDepthSource = m_Settings.Source; // CHANGE: Always use settings, don't force DepthNormals for deferred
             bool shouldAdd = m_SSAOPass.Setup(m_Settings, effectiveDepthSource, m_Material, m_BlueNoise256Textures);
             if (shouldAdd)
                 renderer.EnqueuePass(m_SSAOPass);
