@@ -1589,6 +1589,12 @@ namespace UnityEngine.Rendering.Universal
         private static Lightmapping.RequestLightsDelegate lightsDelegate = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
         {
             LightDataGI lightData = new LightDataGI();
+
+            // URP uses a game like lambertian response for punctual lights, they are off by a factor PI.
+            // Since LightBaker expects its punctual lights to be expressed in standard radiometric units, the intensity is pre-multiplied by PI here to counteract this.
+            // This ensures that the baked punctual light intensity matches realtime intensity. (See GFXLIGHT-1755)
+            const float piCorrection = Mathf.PI;
+
 #if UNITY_EDITOR
             // Always extract lights in the Editor.
             for (int i = 0; i < requests.Length; i++)
@@ -1603,6 +1609,8 @@ namespace UnityEngine.Rendering.Universal
                     case LightType.Directional:
                         DirectionalLight directionalLight = new DirectionalLight();
                         LightmapperUtils.Extract(light, ref directionalLight);
+                        directionalLight.color.intensity *= piCorrection;
+                        directionalLight.indirectColor.intensity *= piCorrection;
 
                         if (light.cookie != null)
                         {
@@ -1624,11 +1632,15 @@ namespace UnityEngine.Rendering.Universal
                     case LightType.Point:
                         PointLight pointLight = new PointLight();
                         LightmapperUtils.Extract(light, ref pointLight);
+                        pointLight.color.intensity *= piCorrection;
+                        pointLight.indirectColor.intensity *= piCorrection;
                         lightData.Init(ref pointLight, ref cookie);
                         break;
                     case LightType.Spot:
                         SpotLight spotLight = new SpotLight();
                         LightmapperUtils.Extract(light, ref spotLight);
+                        spotLight.color.intensity *= piCorrection;
+                        spotLight.indirectColor.intensity *= piCorrection;
                         spotLight.innerConeAngle = light.innerSpotAngle * Mathf.Deg2Rad;
                         spotLight.angularFalloff = AngularFalloffType.AnalyticAndInnerAngle;
                         lightData.Init(ref spotLight, ref cookie);
@@ -1674,16 +1686,22 @@ namespace UnityEngine.Rendering.Universal
                         case LightType.Directional:
                             DirectionalLight directionalLight = new DirectionalLight();
                             LightmapperUtils.Extract(light, ref directionalLight);
+                            directionalLight.color.intensity *= piCorrection;
+                            directionalLight.indirectColor.intensity *= piCorrection;
                             lightData.Init(ref directionalLight);
                             break;
                         case LightType.Point:
                             PointLight pointLight = new PointLight();
                             LightmapperUtils.Extract(light, ref pointLight);
+                            pointLight.color.intensity *= piCorrection;
+                            pointLight.indirectColor.intensity *= piCorrection;
                             lightData.Init(ref pointLight);
                             break;
                         case LightType.Spot:
                             SpotLight spotLight = new SpotLight();
                             LightmapperUtils.Extract(light, ref spotLight);
+                            spotLight.color.intensity *= piCorrection;
+                            spotLight.indirectColor.intensity *= piCorrection;
                             spotLight.innerConeAngle = light.innerSpotAngle * Mathf.Deg2Rad;
                             spotLight.angularFalloff = AngularFalloffType.AnalyticAndInnerAngle;
                             lightData.Init(ref spotLight);
