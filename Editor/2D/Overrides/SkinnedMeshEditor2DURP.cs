@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
 {
-    [CustomEditor(typeof(SkinnedMeshRenderer))]
+    //[CustomEditor(typeof(SkinnedMeshRenderer))]
     [SupportedOnRenderPipeline(typeof(UniversalRenderPipelineAsset))]
     [CanEditMultipleObjects]
     internal class SkinnedMeshEditor2DURP : SkinnedMeshRendererEditor
