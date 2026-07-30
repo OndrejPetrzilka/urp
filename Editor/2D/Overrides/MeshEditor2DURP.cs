@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
 {
-    [CustomEditor(typeof(MeshRenderer))]
+    //[CustomEditor(typeof(MeshRenderer))]
     [SupportedOnRenderPipeline(typeof(UniversalRenderPipelineAsset))]
     [CanEditMultipleObjects]
     internal class Renderer2DMeshEditor : MeshRendererEditor
