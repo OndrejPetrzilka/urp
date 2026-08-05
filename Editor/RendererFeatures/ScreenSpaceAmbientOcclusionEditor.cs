@@ -114,7 +114,7 @@ namespace UnityEditor.Rendering.Universal
             m_ShowQualitySettings.SetValue(EditorGUILayout.Foldout(m_ShowQualitySettings.value, Styles.Quality));
             if (m_ShowQualitySettings.value)
             {
-                bool isDeferredRenderingMode = RendererIsDeferred();
+                bool isDeferredRenderingMode = false;// RendererIsDeferred(); // make UI editable as whole
 
                 EditorGUI.indentLevel++;
 
