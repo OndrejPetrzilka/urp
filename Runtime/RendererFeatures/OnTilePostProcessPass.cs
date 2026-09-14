@@ -14,13 +14,13 @@ public class OnTilePostProcessPass : ScriptableRenderPass
     /// </summary>
     internal readonly bool k_SupportsMultisampleShaderResolve = false;
     internal bool m_UseTextureReadFallback = false;
-    
     RTHandle m_UserLut;
     Material m_OnTileUberMaterial;
     static readonly int s_BlitScaleBias = Shader.PropertyToID("_BlitScaleBias");
     static readonly int s_BlitTexture = Shader.PropertyToID("_BlitTexture");
     int m_DitheringTextureIndex;
     PostProcessData m_PostProcessData;
+    Texture2D[] m_FilmGrainTextures;
 
     // Cache vignette center from peripheral (outer) pass for quad view
     static Vector4 s_CachedPeripheralVignetteCenter = Vector4.zero;
@@ -32,9 +32,11 @@ public class OnTilePostProcessPass : ScriptableRenderPass
 
     internal OnTilePostProcessPass(PostProcessData postProcessData)
     {
+        GraphicsSettings.TryGetRenderPipelineSettings<UniversalRenderPipelineFilmGrainResources>(out var filmGrainResources);
+        m_FilmGrainTextures = filmGrainResources?.textures;
         m_PostProcessData = postProcessData;
 
-#if ENABLE_VR && ENABLE_XR_MODULE        
+#if ENABLE_VR && ENABLE_XR_MODULE
         k_SupportsMultisampleShaderResolve = SystemInfo.supportsMultisampledShaderResolve;
 #endif
     }
@@ -47,7 +49,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         {
             m_OnTileUberMaterial = onTileUberMaterial;
 
-            // We just do this once, assuming the shader never changes. 
+            // We just do this once, assuming the shader never changes.
             m_PassOnTile = onTileUberMaterial.FindPass("OnTileUberPost");
             m_PassOnTileMsaa = onTileUberMaterial.FindPass("OnTileUberPostMSSoftware");
             m_PassTextureSample = onTileUberMaterial.FindPass("OnTileUberPostTextureSample");
@@ -56,7 +58,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
             m_PassTexureSampleVis = onTileUberMaterial.FindPass("OnTileUberPostTextureSampleVisMesh");
         }
 
-        m_OnTileUberMaterial = onTileUberMaterial;                
+        m_OnTileUberMaterial = onTileUberMaterial;
     }
 
     /// <summary>
@@ -71,7 +73,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
     /// <inheritdoc cref="IRenderGraphRecorder.RecordRenderGraph"/>
     public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
     {
-        Debug.Assert(m_OnTileUberMaterial != null, "The material set in OnTilePostProcessPass can't be null.");     
+        Debug.Assert(m_OnTileUberMaterial != null, "The material set in OnTilePostProcessPass can't be null.");
 
         var resourceData = frameData.Get<UniversalResourceData>();
         var renderingData = frameData.Get<UniversalRenderingData>();
@@ -102,7 +104,6 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         TextureHandle source = resourceData.activeColorTexture;
         TextureDesc srcDesc = renderGraph.GetTextureDesc(source);
 
-
         TextureHandle destination = resourceData.backBufferColor;
         var destInfo = renderGraph.GetRenderTargetInfo(destination);
 
@@ -113,7 +114,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         SetupVignette(m_OnTileUberMaterial, cameraData.xr, srcDesc.width, srcDesc.height, vignette);
         SetupLut(m_OnTileUberMaterial, colorLookup, colorAdjustments, lutSize);
         SetupTonemapping(m_OnTileUberMaterial, tonemapping, isHdrGrading: postProcessingData.gradingMode == ColorGradingMode.HighDynamicRange);
-        SetupGrain(m_OnTileUberMaterial, cameraData, filmgrain, m_PostProcessData);
+        SetupGrain(m_OnTileUberMaterial, cameraData, filmgrain, m_FilmGrainTextures);
         SetupDithering(m_OnTileUberMaterial, cameraData, m_PostProcessData);
 
         CoreUtils.SetKeyword(m_OnTileUberMaterial, ShaderKeywordStrings.LinearToSRGBConversion, cameraData.requireSrgbConversion);
@@ -134,7 +135,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         {
             shaderPass = useVisibilityMesh ? m_PassTexureSampleVis : m_PassTextureSample;
         }
-        else 
+        else
         {
             Debug.Assert(srcDesc.width == destInfo.width && srcDesc.height == destInfo.height && srcDesc.slices == destInfo.volumeDepth
                 , "On Tile Post Processing expects the source and destination to have the same dimensions.");
@@ -156,7 +157,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         var lutTexture = resourceData.internalColorLut;
         var passName = m_UseTextureReadFallback ? m_FallbackPassName : m_PassName;
         using (var builder = renderGraph.AddRasterRenderPass<PassData>(passName, out var passData))
-        {            
+        {
             passData.material = m_OnTileUberMaterial;
             passData.shaderPass = shaderPass;
             passData.useTextureReadFallback = m_UseTextureReadFallback;
@@ -199,8 +200,8 @@ public class OnTilePostProcessPass : ScriptableRenderPass
 
             if (useMultisampledShaderResolve)
             {
-                featureFlags |= ExtendedFeatureFlags.MultisampledShaderResolve;                
-            }            
+                featureFlags |= ExtendedFeatureFlags.MultisampledShaderResolve;
+            }
 
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
@@ -238,7 +239,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         {
             data.material.SetTexture(s_BlitTexture, data.source);
         }
-        else 
+        else
         {
             // Setup MSAA samples
             switch (data.msaaSamples)
@@ -298,7 +299,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
             {
                 m_UserLut.Release();
                 m_UserLut = null;
-            } 
+            }
         }
         else
         {
@@ -348,7 +349,7 @@ public class OnTilePostProcessPass : ScriptableRenderPass
                 Vector4 vignetteXRCenter;
                 var xrLayout = XRSystem.currentLayout;
 
-                if (xrLayout != null && xrPass.viewCount > 1 && xrPass.multipassId == 1 && xrPass.isLastCameraPass)
+                if (xrPass.isQuadViewInnerPass)
                 {
                     // Second pass (inner views): Reuse the cached peripheral vignette center
                     // This ensures vignette is calculated in the outer UV space after remapping
@@ -408,19 +409,16 @@ public class OnTilePostProcessPass : ScriptableRenderPass
         }
     }
 
-    void SetupGrain(Material onTileUberMaterial, UniversalCameraData cameraData, FilmGrain filmgrain, PostProcessData data)
+    void SetupGrain(Material onTileUberMaterial, UniversalCameraData cameraData, FilmGrain filmgrain, Texture2D[] filmGrainTextures)
     {
         bool isActive = filmgrain.IsActive();
         CoreUtils.SetKeyword(onTileUberMaterial, ShaderKeywordStrings.FilmGrain, isActive);
 
         if (isActive)
         {
-            PostProcessUtils.ConfigureFilmGrain(
-                data,
-                filmgrain,
-                cameraData.pixelWidth, cameraData.pixelHeight,
-                onTileUberMaterial
-            );
+            UberPostProcessPass.FilmGrainParams.CalcFilmGrainParams(filmgrain, filmGrainTextures, out Texture texture, out Vector2 grainParams);
+            var tilingParams = PostProcessUtils.CalcNoiseTextureTilingParams(texture, cameraData.pixelWidth, cameraData.pixelHeight, PostProcessUtils.GetRandomOffset2D());
+            PostProcessUtils.ConfigureFilmGrainMaterial(onTileUberMaterial, texture, grainParams, tilingParams);
         }
     }
 
