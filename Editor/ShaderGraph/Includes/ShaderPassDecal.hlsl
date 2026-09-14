@@ -376,7 +376,7 @@ void Frag(PackedVaryings packedInput,
     #pragma warning (disable : 3578) // The output value isn't completely initialized.
     half3 packedNormalWS = PackGBufferNormal(normalToPack);
     fragmentOutput.gBuffer0 = half4(surfaceData.baseColor.rgb, surfaceData.baseColor.a);
-    fragmentOutput.gBuffer1 = 0;
+    fragmentOutput.gBuffer1 = half4(surfaceData.metallic, surfaceData.occlusion, surfaceData.smoothness, surfaceData.MAOSAlpha);
     fragmentOutput.gBuffer2 = half4(packedNormalWS, surfaceData.normalWS.a);
     fragmentOutput.color = half4(surfaceData.emissive + color, surfaceData.baseColor.a);
 

@@ -113,7 +113,10 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 else
                     pass.renderStates.Add(RenderState.ColorMask("ColorMask 0"));
 
-                pass.renderStates.Add(RenderState.ColorMask("ColorMask 0 1"));
+                if (decalData.affectsMAOS)
+                    pass.renderStates.Add(RenderState.ColorMask("ColorMask RGB 1"));
+                else
+                    pass.renderStates.Add(RenderState.ColorMask("ColorMask 0 1"));
 
                 if (decalData.affectsNormal)
                     pass.renderStates.Add(RenderState.ColorMask("ColorMask RGB 2"));
