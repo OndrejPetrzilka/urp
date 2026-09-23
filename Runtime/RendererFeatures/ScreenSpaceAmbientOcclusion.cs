@@ -332,10 +332,10 @@ namespace UnityEngine.Rendering.Universal
         {
             var featureSettings = new FeatureSettings();
             featureSettings.afterOpaque = settings.AfterOpaque;
-            featureSettings.effectiveDepthSource = usesDeferred ? ScreenSpaceAmbientOcclusionSettings.DepthSource.DepthNormals : settings.Source;
+            featureSettings.effectiveDepthSource = settings.Source; // CHANGE: Always use source, allow Depth-only in deferred
 
             if (usesDeferred)
-                featureSettings.passEvent = featureSettings.afterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.AfterRenderingPrePasses;
+                featureSettings.passEvent = featureSettings.afterOpaque ? RenderPassEvent.AfterRenderingOpaques : RenderPassEvent.BeforeRenderingDeferredLights; // CHANGE: when NOT after opaque, use BeforeRenderingDeferredLights instead of AfterPrepasses;
             else
                 featureSettings.passEvent = featureSettings.afterOpaque ? RenderPassEvent.BeforeRenderingTransparents : RenderPassEvent.AfterRenderingPrePasses + 1;
 

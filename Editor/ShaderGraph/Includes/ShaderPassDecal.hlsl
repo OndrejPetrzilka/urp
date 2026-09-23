@@ -367,7 +367,10 @@ void Frag(PackedVaryings packedInput,
 #ifdef _MATERIAL_AFFECTS_ALBEDO
     Light mainLight = GetMainLight(inputData.shadowCoord, inputData.positionWS, inputData.shadowMask);
     MixRealtimeAndBakedGI(mainLight, surfaceData.normalWS.xyz, inputData.bakedGI, inputData.shadowMask);
-    half3 color = GlobalIllumination(brdfData, inputData.bakedGI, surface.occlusion, surfaceData.normalWS.xyz, inputData.viewDirectionWS);
+    //half3 color = GlobalIllumination(brdfData, inputData.bakedGI, surface.occlusion, surfaceData.normalWS.xyz, inputData.viewDirectionWS);
+
+    // CHANGE: Allow use of reflection probe atlas
+    half3 color = GlobalIllumination(brdfData, (BRDFData)0, 0, inputData.bakedGI, surface.occlusion, inputData.positionWS, surfaceData.normalWS.xyz, inputData.viewDirectionWS, inputData.normalizedScreenSpaceUV);
 #else
     half3 color = 0;
 #endif
@@ -376,7 +379,7 @@ void Frag(PackedVaryings packedInput,
     #pragma warning (disable : 3578) // The output value isn't completely initialized.
     half3 packedNormalWS = PackGBufferNormal(normalToPack);
     fragmentOutput.gBuffer0 = half4(surfaceData.baseColor.rgb, surfaceData.baseColor.a);
-    fragmentOutput.gBuffer1 = 0;
+    fragmentOutput.gBuffer1 = half4(surfaceData.metallic, surfaceData.occlusion, surfaceData.smoothness, surfaceData.MAOSAlpha);
     fragmentOutput.gBuffer2 = half4(packedNormalWS, surfaceData.normalWS.a);
     fragmentOutput.color = half4(surfaceData.emissive + color, surfaceData.baseColor.a);
 
