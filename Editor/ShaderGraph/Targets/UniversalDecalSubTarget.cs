@@ -113,7 +113,10 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 else
                     pass.renderStates.Add(RenderState.ColorMask("ColorMask 0"));
 
-                pass.renderStates.Add(RenderState.ColorMask("ColorMask 0 1"));
+                if (decalData.affectsMAOS)
+                    pass.renderStates.Add(RenderState.ColorMask("ColorMask RGB 1"));
+                else
+                    pass.renderStates.Add(RenderState.ColorMask("ColorMask 0 1"));
 
                 if (decalData.affectsNormal)
                     pass.renderStates.Add(RenderState.ColorMask("ColorMask RGB 2"));
@@ -990,6 +993,9 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { CoreKeywordDescriptors.UseLegacyLightmaps },
                 { CoreKeywordDescriptors.LightmapBicubicSampling },
                 { CoreKeywordDescriptors.ReflectionProbeRotation },
+                { CoreKeywordDescriptors.ReflectionProbeAtlas },
+                { CoreKeywordDescriptors.ReflectionProbeBlending },
+                { CoreKeywordDescriptors.ReflectionProbeBoxProjection },
                 { CoreKeywordDescriptors.MainLightShadows },
                 { CoreKeywordDescriptors.AdditionalLights },
                 { CoreKeywordDescriptors.AdditionalLightShadows },
@@ -1017,6 +1023,10 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { CoreKeywordDescriptors.AdditionalLightShadows },
                 { CoreKeywordDescriptors.ShadowsSoft },
                 { CoreKeywordDescriptors.ClusterLightLoop },
+                { CoreKeywordDescriptors.ReflectionProbeRotation },
+                { CoreKeywordDescriptors.ReflectionProbeAtlas },
+                { CoreKeywordDescriptors.ReflectionProbeBlending },
+                { CoreKeywordDescriptors.ReflectionProbeBoxProjection },
                 { CoreKeywordDescriptors.LightCookies },
                 { CoreKeywordDescriptors.DebugDisplay },
                 { Descriptors.DecalsNormalBlend },
@@ -1031,6 +1041,9 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { CoreKeywordDescriptors.UseLegacyLightmaps },
                 { CoreKeywordDescriptors.LightmapBicubicSampling },
                 { CoreKeywordDescriptors.ReflectionProbeRotation },
+                { CoreKeywordDescriptors.ReflectionProbeAtlas },
+                { CoreKeywordDescriptors.ReflectionProbeBlending },
+                { CoreKeywordDescriptors.ReflectionProbeBoxProjection },
                 { CoreKeywordDescriptors.MainLightShadows },
                 { CoreKeywordDescriptors.ShadowsSoft },
                 { CoreKeywordDescriptors.LightmapShadowMixing },
@@ -1050,6 +1063,11 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { Descriptors.DecalLayers },
                 { CoreKeywordDescriptors.GBufferNormalsOct },
                 { CoreKeywordDescriptors.RenderPassEnabled },
+                { CoreKeywordDescriptors.ClusterLightLoop },
+                { CoreKeywordDescriptors.ReflectionProbeRotation },
+                { CoreKeywordDescriptors.ReflectionProbeAtlas },
+                { CoreKeywordDescriptors.ReflectionProbeBlending },
+                { CoreKeywordDescriptors.ReflectionProbeBoxProjection },
             };
         }
         #endregion
