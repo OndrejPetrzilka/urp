@@ -27,6 +27,9 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
         [SerializeField]
         bool m_BlendModePreserveSpecular = true;
 
+        [SerializeField]
+        bool m_singlePass = false;
+
         protected override ShaderID shaderID => ShaderID.SG_TerrainLit;
 
         public bool enableInstancedPerPixelNormal
@@ -45,6 +48,12 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
         {
             get => m_BlendModePreserveSpecular;
             set => m_BlendModePreserveSpecular = value;
+        }
+
+        public bool singlePass
+        {
+            get => m_singlePass;
+            set => m_singlePass = value;
         }
 
         public UniversalTerrainLitSubTarget()
@@ -70,8 +79,19 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
             context.AddSubShader(PostProcessSubShader(TerrainSubShaders.LitComputeDotsSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
             context.AddSubShader(PostProcessSubShader(TerrainSubShaders.LitGLESSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
 
-            context.AddSubShader(PostProcessSubShader(TerrainLitAddSubShaders.LitComputeDotsSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
-            context.AddSubShader(PostProcessSubShader(TerrainLitAddSubShaders.LitGLESSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
+            if (singlePass)
+            {
+                // In single pass mode, remove dependencies to AddPassShader
+                foreach (var sub in context.subShaders)
+                {
+                    sub.shaderDependencies?.RemoveAll(s => s.dependencyName == "AddPassShader");
+                }
+            }
+            else
+            {
+                context.AddSubShader(PostProcessSubShader(TerrainLitAddSubShaders.LitComputeDotsSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
+                context.AddSubShader(PostProcessSubShader(TerrainLitAddSubShaders.LitGLESSubShader(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
+            }
 
             context.AddSubShader(PostProcessSubShader(TerrainLitBaseMapGenSubShaders.GenerateBaseMap(target, renderTypeOpaque, renderQueue, blendModePreserveSpecular)));
         }
@@ -392,6 +412,16 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
 
                 registerUndo("Change Fragment Normal Space");
                 normalDropOffSpace = (NormalDropOffSpace)evt.newValue;
+                onChange();
+            });
+
+            context.AddProperty("Single Pass", "Render terrain in single pass (no add-pass)", 0, new Toggle() { value = singlePass }, (evt) =>
+            {
+                if (Equals(singlePass, evt.newValue))
+                    return;
+
+                registerUndo("Change Single Pass");
+                singlePass = evt.newValue;
                 onChange();
             });
         }
